@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+.pixi/
+
+# rattler-build outputs
+output/
+*.conda
+*.tar.bz2
