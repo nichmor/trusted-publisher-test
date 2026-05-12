@@ -18,9 +18,9 @@ jobs:
     env:
       # --- Fill these in once the publisher is registered on prefix.dev ---
       # The full URL of the staging / preview instance, no trailing slash.
-      PREFIX_SERVER_URL: https://<your-staging-host>
+      PREFIX_SERVER_URL: https://preview-pr-2140.prefix.dev
       # The channel the publisher is registered against.
-      PREFIX_CHANNEL: <your-channel>
+      PREFIX_CHANNEL: jora
 
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +30,9 @@ jobs:
         with:
           # Pin to whatever release pairs with your PR's mint_token contract.
           rattler-build-version: latest
+          # Just install the CLI — the action otherwise runs its own build at
+          # conda.recipe/recipe.yaml by default, which doesn't exist here.
+          setup-only: true
 
       - name: Build conda package
         run: rattler-build build --recipe recipe/recipe.yaml --output-dir output
