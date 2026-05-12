@@ -5,9 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# `id-token: write` is what makes the GitHub OIDC token available to the
-# runner. Without it, rattler-build's trusted-publishing path can't fetch the
-# token and will skip (TrustedPublishResult::Skipped).
+# `id-token: write` lets the runner mint a GitHub OIDC token, which pixi
+# exchanges with prefix.dev for a short-lived upload token. Without it,
+# trusted publishing is silently skipped.
 permissions:
   contents: read
   id-token: write
@@ -16,35 +16,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # --- Fill these in once the publisher is registered on prefix.dev ---
-      # The full URL of the staging / preview instance, no trailing slash.
-      PREFIX_SERVER_URL: https://preview-pr-2140.prefix.dev
-      # The channel the publisher is registered against.
-      PREFIX_CHANNEL: jora
+      # Full channel URL on the preview env. Trailing path is owner/channel.
+      PREFIX_CHANNEL_URL: https://preview-pr-2140.prefix.dev/jora
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install rattler-build
-        uses: prefix-dev/rattler-build-action@v0.2.31
+      - name: Install pixi
+        uses: prefix-dev/setup-pixi@v0.8.10
         with:
-          # Pin to whatever release pairs with your PR's mint_token contract.
-          rattler-build-version: latest
-          # Just install the CLI — the action otherwise runs its own build at
-          # conda.recipe/recipe.yaml by default, which doesn't exist here.
-          setup-only: true
+          pixi-version: latest
 
-      - name: Build conda package
-        run: rattler-build build --recipe recipe/recipe.yaml --output-dir output
-
-      # No --api-key is passed. Because GITHUB_ACTIONS=true and id-token: write
-      # is granted, rattler-build will:
-      #   1. GET $ACTIONS_ID_TOKEN_REQUEST_URL?audience=prefix.dev
-      #   2. POST {token} -> $PREFIX_SERVER_URL/api/oidc/mint_token
-      #   3. Use the minted JWT as Bearer for the upload.
-      - name: Upload to prefix.dev (trusted publishing)
-        run: |
-          rattler-build upload prefix \
-            --url "$PREFIX_SERVER_URL" \
-            --channel "$PREFIX_CHANNEL" \
-            output/noarch/hello-trusted-*.conda
+      - name: Build and publish to prefix.dev (trusted publishing)
+        run: pixi publish --to "$PREFIX_CHANNEL_URL"
