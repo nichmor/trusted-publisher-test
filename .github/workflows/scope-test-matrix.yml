@@ -1,0 +1,27 @@
+name: scope-test-matrix
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_mode:
+        description: 'Publisher access mode currently configured on beta (READ / READ_WRITE / READ_WRITE_DELETE) — logged only'
+        required: true
+        default: 'READ_WRITE_DELETE'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show context
+        run: |
+          echo "Expected publisher mode: ${{ inputs.expected_mode }}"
+          echo "Workflow ref: ${{ github.workflow_ref }}"
+      - name: Run scope matrix
+        env:
+          BACKEND: https://beta.prefix.dev
+        run: bash scripts/run-matrix.sh
